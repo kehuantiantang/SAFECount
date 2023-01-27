@@ -5,6 +5,9 @@
 # @Revision : sober 
 # @Date     ：2023/1/27 18:22
 import argparse
+import sys
+sys.path.append('./')
+sys.path.append('../')
 import json
 import os
 import os.path as osp
@@ -40,7 +43,7 @@ def to_json(items, target_path):
 
     for item in tqdm(items, desc='To json'):
         content = json.dumps(item, indent=4)
-        f.write(content + '/n')
+        f.write(content + '\n')
 
     f.close()
 
