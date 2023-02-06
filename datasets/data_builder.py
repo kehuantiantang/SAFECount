@@ -29,7 +29,10 @@ def build(cfg, dataset_type, distributed):
 
 
 def build_dataloader(cfg_dataset, distributed=True):
-    rank = dist.get_rank()
+    if distributed:
+        rank = dist.get_rank()
+    else:
+        rank = 0
 
     train_loader = None
     if cfg_dataset.get("train", None):

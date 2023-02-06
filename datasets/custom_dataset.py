@@ -2,7 +2,7 @@ from __future__ import division
 
 import json
 import os
-
+import os.path as osp
 import cv2
 import numpy as np
 import torch
@@ -17,7 +17,10 @@ from datasets.transforms import RandomColorJitter
 
 
 def build_custom_dataloader(cfg, training, distributed=True):
-    rank = dist.get_rank()
+    if distributed:
+        rank = dist.get_rank()
+    else:
+        rank = 0
 
     normalize_fn = transforms.Normalize(mean=cfg["pixel_mean"], std=cfg["pixel_std"])
 
@@ -110,9 +113,11 @@ class CustomDataset(BaseDataset):
         # read img
         img_name = meta["filename"]
         img_path = os.path.join(self.img_dir, img_name)
+        assert osp.exists(img_path), "img_path: {} not exist".format(img_path)
         image = cv2.imread(img_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         height, width = image.shape[:2]
+
         # read density
         density_name = meta["density"]
         density_path = os.path.join(self.density_dir, density_name)
@@ -128,11 +133,22 @@ class CustomDataset(BaseDataset):
             )
         if self.colorjitter_fn:
             image = self.colorjitter_fn(image)
+
+        # s_img = np.asarray(image)
+        # for index, bbox in enumerate(boxes):
+        #     y_tl, x_tl, y_br, x_br = bbox
+        #     img = s_img[y_tl : (y_br + 1), x_tl : (x_br + 1), :]
+        #     os.makedirs('./tp', exist_ok=True)
+        #     cv2.imwrite('./tp/%s_%d.jpg'%(img_name.split('.')[0], index), img)
+        # import sys
+        # sys.exit(0)
+
         image = transforms.ToTensor()(image)
         density = transforms.ToTensor()(density)
         boxes = torch.tensor(boxes, dtype=torch.float64)
         if self.normalize_fn:
             image = self.normalize_fn(image)
+        # print(img_name, image.shape, density.shape, len(boxes))
         return {
             "filename": img_name,
             "height": height,

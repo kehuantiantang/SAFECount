@@ -4,6 +4,12 @@ import os
 import cv2
 import numpy as np
 
+def apply_scoremap(image, scoremap, alpha=0.5):
+    np_image = np.asarray(image, dtype=np.float32)
+    scoremap = (scoremap * 255).astype(np.uint8)
+    scoremap = cv2.applyColorMap(scoremap, cv2.COLORMAP_JET)
+    scoremap = cv2.cvtColor(scoremap, cv2.COLOR_BGR2RGB)
+    return (alpha * np_image + (1 - alpha) * scoremap).astype(np.uint8)
 
 def gen_gaussian2d(shape, sigma=1):
     h, w = [_ // 2 for _ in shape]
@@ -62,7 +68,7 @@ def _min_dis_local(point, points):
     return dis
 
 
-def points2density(points, max_scale, max_radius):
+def points2density(points, max_scale, max_radius, image_size):
     """
     points: m x 2, m x [x, y]
     """
@@ -110,7 +116,7 @@ if __name__ == "__main__":
         points = np.array(points)
         cnt_gt = points.shape[0]
 
-        density = points2density(points, max_scale=3.0, max_radius=15.0)
+        density = points2density(points, max_scale=3.0, max_radius=15.0, image_size = image_size)
 
         if not cnt_gt == 0:
             cnt_cur = density.sum()

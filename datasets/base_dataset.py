@@ -44,9 +44,10 @@ class BaseTransform(object):
     def __call__(self, image, density, boxes, points, size_orig):
         h_orig, w_orig = size_orig
         h_rsz, w_rsz = self.size_rsz
-        h_scale, w_scale = h_rsz / h_orig, w_rsz / w_orig
+        h_scale, w_scale = h_rsz * 1.0 / h_orig, w_rsz * 1.0 / w_orig
 
         # resize image
+
         image = cv2.resize(image, (w_rsz, h_rsz))
         # gamma
         if self.gamma:
@@ -133,5 +134,6 @@ class ExemplarTransform(object):
         x_tl = int(x_tl * w_scale)
         x_br = int(x_br * w_scale)
         box_rsz = [y_tl, x_tl, y_br, x_br]
+
 
         return image, box_rsz

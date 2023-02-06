@@ -202,6 +202,7 @@ class SimilarityWeightedAggregation(nn.Module):
         )  # [head,c,h,w]
         attns_list = []
         for key in keys:
+            # print('key', key.size(), query.size())
             if self.pool.type == "max":
                 key = F.adaptive_max_pool2d(key, self.pool.size, return_indices=False)
             else:

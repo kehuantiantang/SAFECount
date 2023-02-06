@@ -2,6 +2,7 @@ from __future__ import division
 
 import json
 import os
+import sys
 
 import cv2
 import numpy as np
@@ -17,7 +18,10 @@ from datasets.transforms import RandomColorJitter
 
 
 def build_custom_exemplar_dataloader(cfg, training, distributed=True):
-    rank = dist.get_rank()
+    if distributed:
+        rank = dist.get_rank()
+    else:
+        rank = 0
 
     normalize_fn = transforms.Normalize(mean=cfg["pixel_mean"], std=cfg["pixel_std"])
 
@@ -97,6 +101,7 @@ class CustomDataset(BaseDataset):
             for line in f_r:
                 meta = json.loads(line)
                 self.metas.append(meta)
+        print("Load {} metas from {}".format(len(self.metas), meta_file))
 
         # construct exemplar_metas
         exemplar_metas = []
@@ -111,13 +116,23 @@ class CustomDataset(BaseDataset):
         else:
             exemplar_metas = exemplar_metas[0 : cfg_exemplar["num_exemplar"]]
 
+        print('Total number of exemplar images: {}'.format(len(exemplar_metas)))
         # construct exemplar list
         exemplar_imgs = []
         exemplar_boxes = []
         for meta in exemplar_metas:
-            image = cv2.imread(os.path.join(cfg_exemplar["img_dir"], meta["filename"]))
+            path = os.path.join(cfg_exemplar["img_dir"], meta["filename"])
+
+            assert os.path.exists(path), "exemplar image {} not exists!".format(path)
+
+            image = cv2.imread(path)
+            try:
+                height, width = image.shape[:2]
+            except:
+                print("exemplar image {} not exists!".format(path))
+
+
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            height, width = image.shape[:2]
             # resize to a fix size
             box = meta["box"]
             if self.exemplar_fn:
