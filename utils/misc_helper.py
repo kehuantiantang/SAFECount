@@ -143,7 +143,7 @@ def load_state(path, model, optimizer=None):
             return best_metric, epoch
     else:
         if rank == 0:
-            print("=> no checkpoint found at '{}'".format(path))
+            print("=> No checkpoint found at '{}'".format(path), '!!!!!!!!!')
 
 
 def set_random_seed(seed=233, reproduce=False):

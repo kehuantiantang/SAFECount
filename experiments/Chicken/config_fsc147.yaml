@@ -1,4 +1,4 @@
-port: 22222
+port: 22223
 random_seed: 0
 
 dataset:
@@ -59,16 +59,16 @@ trainer:
 saver:
   auto_resume: False
   always_save: False
-  load_path: checkpoints/ckpt_best.pth.tar
+  load_path: checkpoints/small_dataset/ckpt_best.pth.tar
 #  load_path: /home/khtt/code/SAFECount/experiments/FSC147/checkpoints
-  save_dir: checkpoints/
-  log_dir: log/
+  save_dir: checkpoints/small_dataset
+  log_dir: log/small_dataset
 
 evaluator:
   save_dir: result_eval_temp
 
 visualizer:
-  vis_dir: vis/
+  vis_dir: vis/small_dataset
   img_dir: *img_dir
   activation: sigmoid # [null, sigmoid]
   normalization: True

@@ -18,17 +18,17 @@ from support_tools.pascal_voc_utils import Reader
 
 def parse():
     parser = argparse.ArgumentParser(description='SAFECount data split')
-    # parser.add_argument('--input_dir', required=True, help='input directory with json files')
-    # parser.add_argument('--output_dir', required=True, help='output directory')
-    # parser.add_argument('--xml_dir', required=True, help='where the test xml file saved')
+    parser.add_argument('--input_dir', required=True, help='input directory with json files')
+    parser.add_argument('--output_dir', required=True, help='output directory')
+    parser.add_argument('--xml_dir', required=True, help='where the test xml file saved')
 
-    parser.add_argument('--input_dir', default='/Volumes/SoberSSD/SSD_Download/chicken_count_process/frames',
-                        help='input '
-                                                                                                             'directory with json files')
-    parser.add_argument('--output_dir', default='/Users/sober/Workspace/Python/SAFECount/data/Chicken/camera',
-                        help='output directory')
-    parser.add_argument('--xml_dir', default='/Volumes/SoberSSD/SSD_Download/chicken_count_process/xml', help='where '
-                                                                                                            'the test xml file saved')
+    # parser.add_argument('--input_dir', default='/Volumes/SoberSSD/SSD_Download/chicken_count_process/frames',
+    #                     help='input '
+    #                                                                                                          'directory with json files')
+    # parser.add_argument('--output_dir', default='/Users/sober/Workspace/Python/SAFECount/data/Chicken/camera',
+    #                     help='output directory')
+    # parser.add_argument('--xml_dir', default='/Volumes/SoberSSD/SSD_Download/chicken_count_process/xml', help='where '
+    #                                                                                                         'the test xml file saved')
 
     parser.add_argument('--test_suffix', type=str, default='xml', help='If the file has xml annotation, it is a test set')
     parser.add_argument('--split_type', type=str, default='exemplar', help='random split')

@@ -65,7 +65,7 @@ saver:
   always_save: False
   load_path: checkpoints/camera/ckpt_best.pth.tar
   save_dir: checkpoints/camera
-  log_dir: log/
+  log_dir: log/camera
 
 evaluator:
   save_dir: result_eval_temp

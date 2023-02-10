@@ -6,6 +6,7 @@ import torch
 
 
 def dump(save_dir, outputs):
+    os.makedirs(save_dir, exist_ok=True)
     filenames = outputs["filename"]
     batch_size = len(filenames)
     density = outputs["density"]  # b x 1 x h x w
