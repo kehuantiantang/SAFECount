@@ -68,8 +68,8 @@ def video2frame(path, target_path, interval = 10, bar = None):
 
 
 if __name__ == '__main__':
-    source_p, target_p = '/Users/sober/Downloads/chicken_counting_select', \
-                         '/Volumes/SoberSSD/SSD_Download/chicken_counting_tp'
+    source_p, target_p = '/Volumes/SoberSSD/SSD_Download/chicken/no_chicken', \
+                         '/Volumes/SoberSSD/SSD_Download/chicken/no_chicken_clip'
 
 
     all_files = []
@@ -86,17 +86,11 @@ if __name__ == '__main__':
 
 
     for path in sorted(all_files):
-        kwds = {'path':path, 'target_path':target_p, 'interval':30}
+        kwds = {'path':path, 'target_path':target_p, 'interval':20}
         # video2frame(**kwds)
         pool.apply_async(video2frame, kwds=kwds, callback=update)
 
     pool.close()
     pool.join()
 
-    # for root, _, filenames in os.walk(source_p):
-    #     for filename in filenames:
-    #         if filename.endswith('.mp4') and not filename.startswith('.'):
-    #             video2frame(osp.join(root, filename), target_p, 30)
-
-    # video2frame('/Volumes/SoberSSD/SSD_Download/chicken_counting_select/Ch03/20220905/0_8_IPC3_20220905065828.mp4', target_p, 30)
 

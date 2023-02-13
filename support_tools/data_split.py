@@ -18,20 +18,20 @@ from support_tools.pascal_voc_utils import Reader
 
 def parse():
     parser = argparse.ArgumentParser(description='SAFECount data split')
-    parser.add_argument('--input_dir', required=True, help='input directory with json files')
-    parser.add_argument('--output_dir', required=True, help='output directory')
-    parser.add_argument('--xml_dir', required=True, help='where the test xml file saved')
+    # parser.add_argument('--input_dir', required=True, help='input directory with json files')
+    # parser.add_argument('--output_dir', required=True, help='output directory')
+    # parser.add_argument('--xml_dir', required=True, help='where the test xml file saved')
 
-    # parser.add_argument('--input_dir', default='/Volumes/SoberSSD/SSD_Download/chicken_count_process/frames',
-    #                     help='input '
-    #                                                                                                          'directory with json files')
-    # parser.add_argument('--output_dir', default='/Users/sober/Workspace/Python/SAFECount/data/Chicken/camera',
-    #                     help='output directory')
-    # parser.add_argument('--xml_dir', default='/Volumes/SoberSSD/SSD_Download/chicken_count_process/xml', help='where '
-    #                                                                                                         'the test xml file saved')
+    parser.add_argument('--input_dir', default='/Volumes/SoberSSD/SSD_Download/chicken/chicken_2_finetune/output/frames',
+                        help='input '
+                                                                                                             'directory with json files')
+    parser.add_argument('--output_dir', default='/Users/sober/Workspace/Python/SAFECount/data/Chicken/camera_test',
+                        help='output directory')
+    parser.add_argument('--xml_dir', default='/Volumes/SoberSSD/SSD_Download/chicken/chicken_2_finetune/output/xml', help='where '
+                                                                                                            'the test xml file saved')
 
     parser.add_argument('--test_suffix', type=str, default='xml', help='If the file has xml annotation, it is a test set')
-    parser.add_argument('--split_type', type=str, default='exemplar', help='random split')
+    parser.add_argument('--split_type', type=str, default='test', help='random split')
 
     args = parser.parse_args()
     print(args)
@@ -73,7 +73,7 @@ if __name__ == '__main__':
                 else:
                     items.append(filename)
 
-    assert args.split_type in ['random', 'xml', 'exemplar']
+    assert args.split_type in ['random', 'xml', 'exemplar', 'test']
     if args.split_type == 'random':
         # random select some item for train and test, with rate 4:1
         items.extend(xml_items)
@@ -110,6 +110,18 @@ if __name__ == '__main__':
 
         test_items = items[:int(len(items) * 0.2)]
         train_items = items[int(len(items) * 0.2):]
+    elif args.split_type == 'test':
+
+        f = open(osp.join(args.output_dir, 'exemplar_test.json'), 'w+', encoding='utf-8')
+
+        for xml_item in xml_items:
+            filename, objs = xml_item
+            xmin, ymin, xmax, ymax = objs[0]
+            content = json.dumps({'filename': osp.splitext(filename)[0] + '.jpg', 'box': [ymin, xmin, ymax, xmax]})
+            f.write(content + '\n')
+        f.close()
+        json_generator(xml_items, args.input_dir, osp.join(args.output_dir, 'test_test.json'))
+        sys.exit(0)
     else:
         raise ValueError('Split type error')
 

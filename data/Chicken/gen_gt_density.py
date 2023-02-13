@@ -24,11 +24,12 @@ def draw_gaussian(density, center, radius, k=1, delte=6, overlap="add"):
     gaussian = gen_gaussian2d((diameter, diameter), sigma=diameter / delte)
     gaussian = gaussian / gaussian.sum()
     height, width = density.shape[0:2]
-    x, y = center.astype(np.int)
+    x, y = center.astype(np.int32)
     x = min(x, width - 1)
     y = min(y, height - 1)
     left, right = min(x, radius), min(width - x, radius + 1)
     top, bottom = min(y, radius), min(height - y, radius + 1)
+    left, right, top, bottom, radius = map(int, [left, right, top, bottom, radius])
     if overlap == "max":
         masked_density = density[y - top : y + bottom, x - left : x + right]
         masked_gaussian = gaussian[
