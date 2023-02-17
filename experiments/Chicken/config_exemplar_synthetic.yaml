@@ -54,6 +54,7 @@ trainer:
     type: Adam
     kwargs:
       lr: 0.00002
+
   lr_scheduler:
     type: StepLR
     kwargs:
