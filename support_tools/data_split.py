@@ -21,17 +21,19 @@ def parse():
     # parser.add_argument('--input_dir', required=True, help='input directory with json files')
     # parser.add_argument('--output_dir', required=True, help='output directory')
     # parser.add_argument('--xml_dir', required=True, help='where the test xml file saved')
+    #
+    # parser.add_argument('--test_suffix', type=str, default='xml', help='If the file has xml annotation, it is a test set')
+    # parser.add_argument('--split_type', type=str, default='test', help='random split')
 
-    parser.add_argument('--input_dir', default='/Volumes/SoberSSD/SSD_Download/chicken/chicken_2_finetune/output/frames',
-                        help='input '
-                                                                                                             'directory with json files')
-    parser.add_argument('--output_dir', default='/Users/sober/Workspace/Python/SAFECount/data/Chicken/camera_test',
+    parser.add_argument('--input_dir', default='/Volumes/SoberSSD/SSD_Download/chicken/no_chicken_clip_synthetic/frames',
+                        help='input directory with json files')
+    parser.add_argument('--output_dir', default='/Users/sober/Workspace/Python/SAFECount/data/Chicken/camera_synthetic',
                         help='output directory')
-    parser.add_argument('--xml_dir', default='/Volumes/SoberSSD/SSD_Download/chicken/chicken_2_finetune/output/xml', help='where '
+    parser.add_argument('--xml_dir', default='/Volumes/SoberSSD/SSD_Download/chicken/chicken_2_finetune1', help='where '
                                                                                                             'the test xml file saved')
-
-    parser.add_argument('--test_suffix', type=str, default='xml', help='If the file has xml annotation, it is a test set')
-    parser.add_argument('--split_type', type=str, default='test', help='random split')
+    parser.add_argument('--test_suffix', type=str, default='xml',
+                        help='If the file has xml annotation, it is a test set')
+    parser.add_argument('--split_type', type=str, default='train', help='random split')
 
     args = parser.parse_args()
     print(args)
@@ -56,13 +58,14 @@ def json_generator(files, root_dir, target_path):
             total_f.write(content + '\n')
     total_f.close()
 
+
 if __name__ == '__main__':
     args = parse()
     os.makedirs(args.output_dir, exist_ok=True)
 
     items,  xml_items = [], []
     for root, _, filenames in os.walk(args.input_dir):
-        for filename in sorted(tqdm(filenames)):
+        for filename in sorted(tqdm(filenames, desc='Read xmls')):
             if filename.endswith('json') and not filename.startswith('.'):
                 name = osp.splitext(filename)[0]
                 # has xml file, this image can be test image
@@ -73,7 +76,8 @@ if __name__ == '__main__':
                 else:
                     items.append(filename)
 
-    assert args.split_type in ['random', 'xml', 'exemplar', 'test']
+    assert args.split_type in ['random', 'xml', 'exemplar', 'test', 'train', 'exemplar_xml']
+
     if args.split_type == 'random':
         # random select some item for train and test, with rate 4:1
         items.extend(xml_items)
@@ -104,14 +108,12 @@ if __name__ == '__main__':
 
     elif args.split_type == 'xml':
         # only the image has xml file can be for train/test
-
         random.seed(0)
         random.shuffle(items)
 
         test_items = items[:int(len(items) * 0.2)]
         train_items = items[int(len(items) * 0.2):]
     elif args.split_type == 'test':
-
         f = open(osp.join(args.output_dir, 'exemplar_test.json'), 'w+', encoding='utf-8')
 
         for xml_item in xml_items:
@@ -122,6 +124,29 @@ if __name__ == '__main__':
         f.close()
         json_generator(xml_items, args.input_dir, osp.join(args.output_dir, 'test_test.json'))
         sys.exit(0)
+    elif args.split_type == 'train':
+        json_generator(items, args.input_dir, osp.join(args.output_dir, 'train.json'))
+        sys.exit(0)
+    elif args.split_type == 'exemplar_xml':
+        # labelme xml annotation
+        # because all the point annotation is xml based, so
+        items.extend(xml_items)
+        exemplar_items = items[:50]
+        items = items[50:]
+        random.seed(0)
+        random.shuffle(items)
+
+        test_items = items[:int(len(items) * 0.2)]
+        train_items = items[int(len(items) * 0.2):]
+
+        f = open(osp.join(args.output_dir, 'exemplar.json'), 'w+', encoding='utf-8')
+
+        for xml_item in exemplar_items:
+            filename, objs = xml_item
+            xmin, ymin, xmax, ymax = objs[0]
+            content = json.dumps({'filename': osp.splitext(filename)[0] + '.jpg', 'box': [ymin, xmin, ymax, xmax]})
+            f.write(content + '\n')
+        f.close()
     else:
         raise ValueError('Split type error')
 

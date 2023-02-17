@@ -8,7 +8,9 @@ import json
 import os
 import os.path as osp
 import random
+import shutil
 import traceback
+from collections import defaultdict
 from multiprocessing.pool import ThreadPool
 
 import numpy as np
@@ -77,14 +79,20 @@ class SafeRescale(A.DualTransform):
 def get_aug_compose(type = 'patch'):
     assert type in ['patch', 'bg']
     if type == 'patch':
-        aug = A.Compose([A.OneOf([A.ElasticTransform(sigma=5, alpha_affine=5, p = 0.1),
-                                  A.OpticalDistortion(distort_limit=0.05, shift_limit=0, p =0.1)],p = 1),
+        aug = A.Compose([
+            # A.OneOf([A.ElasticTransform(sigma=5, alpha_affine=5, p = 0.1),
+            #                       A.OpticalDistortion(distort_limit=0.05, shift_limit=0, p =0.1)],p = 1),
                          A.Flip(p=0.5), A.Rotate(limit = (0, 270), p=0.5),
-                         SafeRescale(min_size = 16, scale_limit=(0.4, 1.1), p = 1),
+                         SafeRescale(min_size = 16, scale_limit=(0.6, 1.1), p = 1),
                          A.OneOf([A.Blur((3, 5), p =0.2), A.MedianBlur(blur_limit = 5, p = 0.2)], p = 1),
                          A.OneOf([A.RandomBrightnessContrast(p=0.2), A.ToGray(p=0.2)], p = 1),])
     else:
-        aug = A.Compose([A.RandomCrop(width = 2200, height = 700, p = 1)])
+        aug = A.Compose([A.RandomCrop(width = 2200, height = 700, p = 1),
+                         A.OpticalDistortion(distort_limit=0.05, shift_limit=0, p=0.2),
+                         A.RandomBrightnessContrast(p = 0.5),
+                         A.ToGray(p = 0.2),
+                         A.Resize(700, 2200, p = 1)
+                         ])
     return aug
 
 def join_create_dir(*args):
@@ -141,14 +149,16 @@ def img_synthetic(img_path, chicken_patches, index, output_path):
         np.save(join_create_dir(output_path, 'gt_density_map', '%08d.npy' % index), density)
 
 
-        # draw vis
+        ## draw vis
         # min, max = density.min(), density.max()
         # density_norm = (density - min) / (max - min + 1e-8)
-        # density_vis = apply_scoremap(aug_bg.copy(), density_norm, 0.5)
+        # aug_bg_copy = cv2.cvtColor(aug_bg, cv2.COLOR_BGR2RGB)
+        # density_vis = apply_scoremap(aug_bg_copy, density_norm, 0.5)
+        # density_vis = cv2.cvtColor(density_vis, cv2.COLOR_RGB2BGR)
         # cv2.imwrite(join_create_dir(output_path, 'vis', '%08d.jpg' % index), density_vis)
     except Exception as e:
         print('img_synthetic error', e, traceback.format_exc())
-    finally:
+
         npy_path = join_create_dir(output_path, 'gt_density_map', '%08d.npy' % index)
         img_path = join_create_dir(output_path, 'frames', '%08d.jpg' % index)
         json_path = join_create_dir(output_path, 'frames', '%08d.json' % index)
@@ -162,9 +172,10 @@ def img_synthetic(img_path, chicken_patches, index, output_path):
         if osp.exists(json_path):
             os.remove(json_path)
 
+
 def generate_synthetic_data(chicken_patch_path, xml_path, bg_path, output_path, num_imgs=1000, num_chicken_per_img = 200,
                             seed =
-1):
+1, start_index = 0):
     os.makedirs(output_path, exist_ok=True)
     chicken_patches = load_chicken_patch(chicken_patch_path, xml_path)
     bg_img_paths = load_bg_imgs(bg_path)
@@ -173,7 +184,7 @@ def generate_synthetic_data(chicken_patch_path, xml_path, bg_path, output_path, 
     bar = tqdm(total=num_imgs, desc='total')
     update = lambda *args: bar.update()
 
-    for i in range(num_imgs):
+    for i in range(start_index, num_imgs + start_index):
         try:
             img_path = bg_img_paths[random.randint(0, len(bg_img_paths) - 1)]
             chicken_index = random.choices(range(0, len(chicken_patches)), k = random.randint(1, num_chicken_per_img))
@@ -190,18 +201,82 @@ def generate_synthetic_data(chicken_patch_path, xml_path, bg_path, output_path, 
     pool.join()
 
 
+def check_validate(output_path):
+    files = defaultdict(list)
+    for root, _, filenames in os.walk(output_path):
+        for filename in filenames:
+            if 'vis' not in root:
+                name = osp.splitext(filename)[0]
+                files[name].append(osp.join(root, filename))
+
+    for name, paths in tqdm(files.items(), total = len(files.keys())):
+        try:
+            if len(paths) != 3:
+                assert ValueError('There must has three files')
+                # for p in paths:
+                #     # os.remove(p)
+                #     assert ValueError('There must has three files')
+            else:
+                for p in paths:
+                    if 'jpg' in p:
+                        img = cv2.imread(p)
+                        h, w, _ = img.shape
+                        assert h == 700 and w == 2200, 'img size error %s' % p.shape
+                    elif 'npy' in p:
+                        heatmap = np.load(p)
+                        h, w = heatmap.shape
+                        assert h == 700 and w == 2200, 'np.shape: %s' % heatmap.shape
+                    elif 'json' in p:
+                        with open(p, 'r', encoding='utf-8') as f:
+                            content = json.load(f)
+                            assert len(content['points']) > 0, 'points is empty'
+                    else:
+                        assert TypeError('File type error, got %s' % p)
+        except Exception as e:
+            print(e, traceback.format_exc())
+            for p in paths:
+                # print('file')
+                os.remove(p)
+                print(p)
+
+def copy_files(src_path, dst_path, json_path):
+    import json
+    with open(json_path, 'r', encoding='utf-8') as f:
+        lines = f.readlines()
+        for line in tqdm(lines):
+            line = line.strip()
+            content = json.loads(line)
+            name = osp.splitext(content['filename'])[0]
+            img = osp.join(src_path, 'frames', name + '.jpg')
+            json_obj = osp.join(src_path, 'frames', name + '.json')
+            npy = osp.join(src_path, 'gt_density_map', name + '.npy')
+
+            if osp.exists(img) and osp.exists(json_obj) and osp.exists(npy):
+                shutil.copy(img, osp.join(dst_path, 'frames'))
+                shutil.copy(json_obj, osp.join(dst_path, 'frames'))
+                shutil.copy(npy, osp.join(dst_path, 'gt_density_map'))
+            else:
+                print('File not exists', img, json, npy)
+
+
 if __name__ == '__main__':
-    generate_synthetic_data(
-        chicken_patch_path='/Volumes/SoberSSD/SSD_Download/chicken/chicken_2_finetune/camera_test/frames',
-        xml_path='/Volumes/SoberSSD/SSD_Download/chicken/chicken_2_finetune/camera_test/xml',
-        bg_path='/Volumes/SoberSSD/SSD_Download/chicken/no_chicken_clip',
-        output_path='/Volumes/SoberSSD/SSD_Download/chicken/no_chicken_clip_synthetic',
-        num_imgs=30000,
-        num_chicken_per_img=300,
-    )
+    # generate_synthetic_data(
+    #     chicken_patch_path='/Volumes/SoberSSD/SSD_Download/chicken/chicken_2_finetune/camera_test/frames',
+    #     xml_path='/Volumes/SoberSSD/SSD_Download/chicken/chicken_2_finetune/camera_test/xml',
+    #     bg_path='/Volumes/SoberSSD/SSD_Download/chicken/no_chicken_clip',
+    #     output_path='/Volumes/SoberSSD/SSD_Download/chicken/no_chicken_clip_synthetic',
+    #     num_imgs=10000,
+    #     num_chicken_per_img=100,
+    #     start_index=40001,
+    # )
     # generate_synthetic_data(
     #     chicken_patch_path='/Volumes/SoberSSD/SSD_Download/chicken/chicken_count_process/input',
     #     xml_path='/Volumes/SoberSSD/SSD_Download/chicken/chicken_count_process/xml',
     #     bg_path='/Volumes/SoberSSD/SSD_Download/chicken/no_chicken_clip',
     #     output_path='/Volumes/SoberSSD/SSD_Download/chicken/no_chicken_clip_synthetic_tp', num_imgs=20,
     #     num_chicken_per_img=200, )
+
+    # check_validate('/Volumes/SoberSSD/SSD_Download/chicken/no_chicken_clip_synthetic')
+
+    copy_files('/Volumes/SoberSSD/SSD_Download/chicken/chicken_origin/',
+               '/Volumes/SoberSSD/SSD_Download/chicken/no_chicken_clip_synthetic', '/Users/sober/Workspace/Python/SAFECount/data/Chicken/camera/train.json')
