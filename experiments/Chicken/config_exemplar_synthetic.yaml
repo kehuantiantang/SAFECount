@@ -1,5 +1,5 @@
 port: 22222
-random_seed: 88888
+random_seed: 888
 
 dataset:
   type: custom_exemplar
@@ -8,7 +8,7 @@ dataset:
     meta_file: /home/khtt/code/SAFECount/data/Chicken/camera/exemplar.json
     norm: True
     num_exemplar: 8
-  input_size:  [512, 512] # [h, w]
+  input_size:  [640, 640] # [h, w] [512, 512]
   pixel_mean: [0.485, 0.456, 0.406]
   pixel_std: [0.229, 0.224, 0.225]
   batch_size: 1
@@ -17,7 +17,7 @@ dataset:
   train:
     img_dir: /home/khtt/code/SAFECount/data/Chicken/camera_synthetic/frames/
     density_dir: /home/khtt/code/SAFECount/data/Chicken/camera_synthetic/gt_density_map/
-    meta_file: /home/khtt/code/SAFECount/data/Chicken/camera_synthetic/train.json
+    meta_file: /home/khtt/code/SAFECount/data/Chicken/camera_synthetic/train_no_origin.json
     hflip:
       prob: 0.5
     vflip:
@@ -53,7 +53,9 @@ trainer:
   optimizer:
     type: Adam
     kwargs:
+#      lr: 0.00002
       lr: 0.00002
+
 
   lr_scheduler:
     type: StepLR
@@ -64,15 +66,19 @@ trainer:
 saver:
   auto_resume: False
   always_save: False
-  load_path: checkpoints/camera/ckpt_best.pth.tar
-  save_dir: checkpoints/camera_synthetic
-  log_dir: log/camera_synthetic
+#  load_path: checkpoints/camera/ckpt_best.pth.tar
+#  load_path: checkpoints/camera_synthetic/ckpt_best.pth.tar
+#  load_path: /home/khtt/code/SAFECount/experiments/FSC147/checkpoints/ckpt_best.pth.tar
+#  load_path: /home/khtt/code/SAFECount/experiments/FSC147/checkpoints/ckpt_best.pth.tar
+  load_path: checkpoints/camera_synthetic_noPretrain/ckpt_best.pth.tar
+  save_dir: checkpoints/camera_synthetic_noPretrain
+  log_dir: log/camera_synthetic_noPretrain
 
 evaluator:
   save_dir: result_eval_temp
 
 visualizer:
-  vis_dir: vis/camera_synthetic
+  vis_dir: vis/camera_synthetic_noPretrain3
   img_dir: *img_test_dir
   activation: sigmoid # [null, sigmoid]
   normalization: True

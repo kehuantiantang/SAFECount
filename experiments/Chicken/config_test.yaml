@@ -63,7 +63,9 @@ trainer:
 saver:
   auto_resume: False
   always_save: False
-  load_path: checkpoints/camera/ckpt_best.pth.tar
+#  load_path: checkpoints/camera/ckpt_best.pth.tar
+#  load_path: checkpoints/camera_synthetic/ckpt_best.pth.tar
+  load_path: checkpoints/camera_synthetic_noPretrain/ckpt_best.pth.tar
   save_dir: checkpoints/camera_test
   log_dir: log/camera_test
 
@@ -71,7 +73,7 @@ evaluator:
   save_dir: result_eval_temp
 
 visualizer:
-  vis_dir: vis/camera_test
+  vis_dir: vis/camera_test_noPretrain
   img_dir: *img_test_dir
   activation: sigmoid # [null, sigmoid]
   normalization: True
