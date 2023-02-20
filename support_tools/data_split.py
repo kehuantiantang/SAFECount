@@ -144,7 +144,8 @@ if __name__ == '__main__':
         for xml_item in exemplar_items:
             filename, objs = xml_item
             xmin, ymin, xmax, ymax = objs[0]
-            content = json.dumps({'filename': osp.splitext(filename)[0] + '.jpg', 'box': [ymin, xmin, ymax, xmax]})
+            content = json.dumps({'filename': osp.splitext(filename)[0] + '.jpg', 'box': [ymin, xmin, ymax, xmax],
+                                  'points':[abs(ymin - ymax) // 2, abs(xmin - xmax) // 2]})
             f.write(content + '\n')
         f.close()
     else:
