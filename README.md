@@ -1,5 +1,6 @@
 # SAFECount
-Official PyTorch Implementation of [Few-shot Object Counting with Similarity-Aware Feature Enhancement](https://arxiv.org/abs/2201.08959), Accepted by WACV 2023.
+[2.17] Official PyTorch Implementation of [Few-shot Object Counting with Similarity-Aware Feature Enhancement]
+(https://arxiv.org/abs/2201.08959), Accepted by WACV 2023.
 
 ![Image text](docs/framework_1block.jpg)
 ![Image text](docs/res_fsc147.jpg)

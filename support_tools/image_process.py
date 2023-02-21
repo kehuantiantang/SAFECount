@@ -10,9 +10,11 @@ from multiprocessing.pool import ThreadPool
 import numpy as np
 import cv2
 from matplotlib import pyplot as plt
-from data.Chicken.gen_gt_density import points2density, apply_scoremap
 import os.path as osp
 import os
+
+from data.Chicken.gen_gt_density import apply_scoremap, points2density
+
 
 def show_image(img, title='', cmap = 'gray'):
     plt.figure()
@@ -71,11 +73,15 @@ def find_line(path):
     ret, thresh = cv2.threshold(erode, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
     thresh = 255 - thresh
 
-    close = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel=(3, 3), iterations=10)
+    close = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel=(3, 3), iterations=0)
+    show_image(close, 'close')
 
+    # minLineLength = 2500
+    # maxLineGap = 800
     minLineLength = 2500
-    maxLineGap = 800
-    lines = cv2.HoughLinesP(close, 1, np.pi / 180, 100, minLineLength, maxLineGap)
+    maxLineGap = 500
+    lines = cv2.HoughLinesP(close, 1, np.pi / 180, 1000, minLineLength, maxLineGap)
+    print(lines.shape)
 
     rm_line = img.copy()
     pipe_raw = np.zeros_like(img, dtype=np.uint8)
@@ -86,7 +92,7 @@ def find_line(path):
         # if abs(y1 - y2) ^ 2 + abs(x1 - x2) ^ 2 > 0:
         #     rm_line = cv2.line(rm_line, (x1, y1), (x2, y2), (255, 0, 255), 5)
         rm_line = cv2.line(rm_line, (0, y1), (width, y2), (255, 0, 255), 5)
-
+        #
         pipe_raw[y1-200:y2+200, 0:width] = img[y1-200:y2+200, 0:width]
         pipe_blur[y1 - 200:y2 + 200, 0:width] = img_blur[y1 - 200:y2 + 200, 0:width]
 
@@ -131,7 +137,7 @@ def find_contours(img):
     show_image(thresh)
     show_image(img, 'img', cmap=None)
 
-def operation(root, filename):
+def operation(root, filename, target_path):
     img = cv2.imread(osp.join(root, filename))
 
 
@@ -184,6 +190,48 @@ def operation(root, filename):
 
     save2file(target_path, filename, img, points, density, True)
 
+
+def test(height = 1000, width = 2000):
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    def generate_rectangles(n, a, b):
+        rectangles = []
+        for i in range(n):
+            w, h = np.random.randint(a, b + 1, size=2)
+            x, y = np.random.randint(0, width - w + 1), np.random.randint(0, height - h + 1)
+            rectangles.append((x, y, w, h))
+        return rectangles
+
+    def check_overlap(rectangles):
+        for i, rect1 in enumerate(rectangles):
+            for j, rect2 in enumerate(rectangles[i + 1:], i + 1):
+                if (rect1[0] < rect2[0] + rect2[2] and rect1[0] + rect1[2] > rect2[0] and rect1[1] < rect2[1] + rect2[
+                    3] and rect1[1] + rect1[3] > rect2[1]):
+                    return True
+        return False
+
+    def draw_rectangles(rectangles):
+        fig, ax = plt.subplots(figsize=(10, 10))
+        for rect in rectangles:
+            ax.add_patch(plt.Rectangle((rect[0], rect[1]), rect[2], rect[3], facecolor='blue', alpha=0.5))
+        plt.xlim([0, 1000])
+        plt.ylim([0, 1000])
+        plt.axis('off')
+        plt.show()
+
+    n = 500  # 长方形数量
+    a = 16  # 最小边长
+    b = 48  # 最大边长
+
+    while True:
+        rectangles = generate_rectangles(n, a, b)
+        if not check_overlap(rectangles):
+            break
+
+    draw_rectangles(rectangles)
+
+
 if __name__ == '__main__':
     # ostd method
 
@@ -210,10 +258,9 @@ if __name__ == '__main__':
     # pool.close()
     # pool.join()
 
-    pipe_line, pipe_blur = find_line(
-        '/Users/sober/Downloads/0_8_IPC1_20220905000000/input/0_8_IPC1_20220905000000_00000000'
-                             '.jpg')
+    # pipe_line, pipe_blur = find_line(
+    #     '/Volumes/SoberSSD/SSD_Download/chicken/chicken_counting_clip/0_8_IPC1_20220905000000/0_8_IPC1_20220905000000_00000001.jpg')
+    #
+    # find_contours(pipe_line)
 
-    find_contours(pipe_line)
-
-
+    test()

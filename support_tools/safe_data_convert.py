@@ -33,7 +33,8 @@ def read_voc_xml(path):
                 objs = reader.get_objects()
                 bboxes =  objs['bboxes']
                 assert  len(bboxes) > 0
-                items.append({'filename': name+'.jpg', 'bboxes': bboxes[0]})
+                for bbox in bboxes:
+                    items.append({'filename': name+'.jpg', 'bboxes': bbox})
 
     return items
 
@@ -42,7 +43,7 @@ def to_json(items, target_path):
     f = open(osp.join(target_path, 'exemplar.json'), 'w', encoding='utf-8')
 
     for item in tqdm(items, desc='To json'):
-        content = json.dumps(item, indent=4)
+        content = json.dumps(item)
         f.write(content + '\n')
 
     f.close()
