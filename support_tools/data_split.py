@@ -90,6 +90,7 @@ def draw_density_vis(path, points, target_path, vis_heatmap = True):
         return False
 
 def json_generator(files, root_dir, target_path):
+
     total_f = open(target_path, 'w+', encoding='utf-8')
     for file in tqdm(files, desc=target_path):
         objs = None
@@ -122,6 +123,7 @@ def json_generator(files, root_dir, target_path):
                     content = json.dumps(content)
                     total_f.write(content + '\n')
     total_f.close()
+
 
 
 if __name__ == '__main__':
